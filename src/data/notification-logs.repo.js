@@ -75,9 +75,7 @@ export function ymdhUtc(date) {
 export async function writeLog(env, entry) {
   const ts = entry.timestamp ? new Date(entry.timestamp) : new Date();
   // 增加随机后缀避免同小时同 sub/rule/channel 多次发送相互覆盖
-  const rand = Math.floor(ts.getTime() % 100000)
-    .toString(36)
-    .padStart(4, '0');
+  const rand = crypto.randomUUID();
   const ruleId = entry.ruleId || 'none';
   const key = `${PREFIX}${ymdhUtc(ts)}:${entry.subId}:${ruleId}:${entry.channel}:${rand}`;
 
