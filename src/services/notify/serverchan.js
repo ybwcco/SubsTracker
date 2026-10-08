@@ -10,6 +10,11 @@ export const serverChanChannel = {
 
   validateConfig(config) {
     if (!config.SERVERCHAN_SENDKEY) return { ok: false, error: '缺少 SERVERCHAN_SENDKEY' };
+    const key = config.SERVERCHAN_SENDKEY.trim();
+    if (!key || /[\s/?#]/.test(key)) return { ok: false, error: 'SendKey 格式无效' };
+    if (key.startsWith('sctp') && !/^sctp\d+t[A-Za-z0-9_-]+$/.test(key)) {
+      return { ok: false, error: 'Server酱³ SendKey 格式无效' };
+    }
     return { ok: true };
   },
 
@@ -17,7 +22,11 @@ export const serverChanChannel = {
     const v = serverChanChannel.validateConfig(config);
     if (!v.ok) return fail('serverchan', v.error || '配置无效');
 
-    const endpoint = `https://sctapi.ftqq.com/${config.SERVERCHAN_SENDKEY}.send`;
+    const key = config.SERVERCHAN_SENDKEY.trim();
+    const sc3 = key.match(/^sctp(\d+)t/);
+    const endpoint = sc3
+      ? `https://${sc3[1]}.push.ft07.com/send/${encodeURIComponent(key)}.send`
+      : `https://sctapi.ftqq.com/${encodeURIComponent(key)}.send`;
     const body = new URLSearchParams({
       title: payload.title || '订阅提醒',
       desp: `## ${payload.title || '订阅提醒'}\n\n${payload.content || ''}`
@@ -30,7 +39,7 @@ export const serverChanChannel = {
         body: body.toString()
       });
       const result = await r.json().catch(() => ({}));
-      return result && result.code === 0
+      return r.ok && result && result.code === 0
         ? ok('serverchan', result)
         : fail('serverchan', `Server酱返回 code=${result?.code} ${result?.message || ''}`, result);
     } catch (err) {
