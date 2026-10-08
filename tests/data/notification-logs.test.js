@@ -89,4 +89,12 @@ describe('notification-logs.repo', () => {
     await writeLog(env, { subId: 's2', channel: 'tg', status: 'success' });
     expect((await recentForSubscription(env, 's1', 10))).toHaveLength(3);
   });
+
+  it('同一毫秒同一订阅渠道的日志不会相互覆盖', async () => {
+    const entry = { subId: 's1', channel: 'tg', status: /** @type {const} */ ('success'), timestamp: '2026-05-24T00:00:00Z' };
+    const first = await writeLog(env, entry);
+    const second = await writeLog(env, entry);
+    expect(first.key).not.toBe(second.key);
+    expect(await query(env, { subId: 's1' })).toHaveLength(2);
+  });
 });
